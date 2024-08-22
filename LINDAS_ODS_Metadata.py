@@ -9,6 +9,7 @@ from datetime import datetime
 schema = Namespace("http://schema.org/")
 dcat = Namespace("http://www.w3.org/ns/dcat#")
 dct = Namespace("http://purl.org/dc/terms/")
+void = Namespace("	http://rdfs.org/ns/void#")
 
 #parse input
 with open("input_Form.yml", "rt", encoding='utf8') as yml_input:
@@ -38,8 +39,8 @@ if dataset_URL[-1] != "/":
     dataset_URL = dataset_URL+"/"
 dataset = URIRef(dataset_URL)
 g.add((dataset, RDF.type, schema.Dataset))
-if ODS_flag:
-    g.add((dataset, RDF.type, dcat.Dataset))
+g.add((dataset, RDF.type, dcat.Dataset))
+g.add((dataset, RDF.type, void.Dataset))
 
 #for each metadata point the following steps need to be checked through
 # 1. get from dict
@@ -52,64 +53,56 @@ name_DE = input_data.get("name_DE")
 if name_DE:
     de_name = Literal(name_DE.strip(), lang="de")
     g.add((dataset, schema.name, de_name))
-    if ODS_flag:
-        g.add((dataset, dct.title, de_name))
+    g.add((dataset, dct.title, de_name))
 else:
     print("Missing German dataset name")
 name_FR = input_data.get("name_FR")
 if name_FR:
     fr_name = Literal(name_FR.strip(), lang="fr")
     g.add((dataset, schema.name, fr_name))
-    if ODS_flag:
-        g.add((dataset, dct.title, fr_name))
+    g.add((dataset, dct.title, fr_name))
 else:
     print("Missing French dataset name")
 name_IT = input_data.get("name_IT")
 if name_IT:
     it_name = Literal(name_IT.strip(), lang="it")
     g.add((dataset, schema.name, it_name))
-    if ODS_flag:
-        g.add((dataset, dct.title, it_name))
+    g.add((dataset, dct.title, it_name))
 else:
     print("Missing Italian dataset name")
 name_EN = input_data.get("name_EN")
 if name_EN:
     en_name = Literal(name_EN.strip(), lang="en")
     g.add((dataset, schema.name, en_name))
-    if ODS_flag:
-        g.add((dataset, dct.title, en_name))
+    g.add((dataset, dct.title, en_name))
 else:
     print("Missing English dataset name")
 description_DE = input_data.get("description_DE")
 if description_DE:
     de_description = Literal(description_DE.strip(), lang="de")
     g.add((dataset, schema.description, de_description))
-    if ODS_flag:
-        g.add((dataset, dct.description, de_description))
+    g.add((dataset, dct.description, de_description))
 else:
     print("Missing German dataset description")
 description_FR = input_data.get("description_FR")
 if description_FR:
     fr_description = Literal(description_FR.strip(), lang="fr")
     g.add((dataset, schema.description, fr_description))
-    if ODS_flag:
-        g.add((dataset, dct.description, fr_description))
+    g.add((dataset, dct.description, fr_description))
 else:
     print("Missing French dataset description")
 description_IT = input_data.get("description_IT")
 if description_IT:
     it_description = Literal(description_IT.strip(), lang="it")
     g.add((dataset, schema.description, it_description))
-    if ODS_flag:
-        g.add((dataset, dct.description, it_description))
+    g.add((dataset, dct.description, it_description))
 else:
     print("Missing Italian dataset description")
 description_EN = input_data.get("description_EN")
 if description_EN:
     en_description = Literal(description_EN.strip(), lang="en")
     g.add((dataset, schema.description, en_description))
-    if ODS_flag:
-        g.add((dataset, dct.description, en_description))
+    g.add((dataset, dct.description, en_description))
 else:
     print("Missing English dataset description")
 
@@ -124,12 +117,11 @@ if contact_name and contact_mail:
         g.add((dataset, schema.contactPoint, contact_point))
         g.add((contact_point, schema.name, con_name))
         g.add((contact_point, schema.email, con_mail))
-        if ODS_flag:
-            ODS_contact = BNode()
-            g.add((dataset, dcat.contactPoint, ODS_contact))
-            g.add((ODS_contact, RDF.type, URIRef("http://www.w3.org/2006/vcard/ns#Organization")))
-            g.add((ODS_contact, URIRef("http://www.w3.org/2006/vcard/ns#fn"), con_name))
-            g.add((ODS_contact, URIRef("http://www.w3.org/2006/vcard/ns#hasEmail"), con_mail))
+        ODS_contact = BNode()
+        g.add((dataset, dcat.contactPoint, ODS_contact))
+        g.add((ODS_contact, RDF.type, URIRef("http://www.w3.org/2006/vcard/ns#Organization")))
+        g.add((ODS_contact, URIRef("http://www.w3.org/2006/vcard/ns#fn"), con_name))
+        g.add((ODS_contact, URIRef("http://www.w3.org/2006/vcard/ns#hasEmail"), con_mail))
     else:
         print("Contact point email address is not in correct format")
 elif contact_name:
@@ -159,8 +151,7 @@ if modification_date:
         parse(str(modification_date))
         mod_date = Literal(modification_date, datatype=URIRef('http://www.w3.org/2001/XMLSchema#dateTime'))
         g.add((dataset, schema.dateModified, mod_date))
-        if ODS_flag:
-            g.add((dataset, dct.modified, mod_date))
+        g.add((dataset, dct.modified, mod_date))
     except(ValueError):
         print("modification date is not formatted as xsd:dateTime")
 else:
@@ -173,9 +164,8 @@ if publication_date:
         datetime.strptime(str(publication_date), date_format)
         pub_date = Literal(publication_date, datatype=URIRef('http://www.w3.org/2001/XMLSchema#date'))
         g.add((dataset, schema.datePublished, pub_date))
-        if ODS_flag:
-            issue_date = parse(str(publication_date))
-            g.add((dataset, dct.issued, Literal(issue_date, datatype=URIRef('http://www.w3.org/2001/XMLSchema#date'))))
+        issue_date = parse(str(publication_date))
+        g.add((dataset, dct.issued, Literal(issue_date, datatype=URIRef('http://www.w3.org/2001/XMLSchema#date'))))
     except(ValueError):
         print("publication date is not formatted as xsd:date")
 else:
@@ -256,7 +246,7 @@ else:
 #optional metadata
 creator = input_data.get("dataset creator") 
 if creator:
-    if "http" in creator:
+    if "http" or "https" in creator:
         creator_URI = URIRef(creator)
         g.add((dataset, schema.creator, creator_URI))
     else:
