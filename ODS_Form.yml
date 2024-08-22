@@ -2,11 +2,6 @@
 #the metadata which overlaps with the LINDAS requirements is automatically added if publication through opendata.swiss is selected
 #for details see the DCAT-AP handbook at: https://handbook.opendata.swiss/de/content/glossar/bibliothek/dcat-ap-ch.html
 
-identifier: "" #string of identifier, expected in the following structure: [Source-Dataset-ID]@[Source-Organisation-ID]
-
-creator: "" #URI of organization from list of opendata.swiss organizations https://register.ld.admin.ch/opendataswiss/org
-publisher: "" #string with the name of publishing organization
-
 themes: "" #list (separated by ";") of URIs of themes from list of opendata.swiss themes https://register.ld.admin.ch/opendataswiss/category/
 
 rights: "" #URI of one of the four defined terms for the terms of use from https://ld.admin.ch/vocabulary/TermsOfUse      
@@ -23,7 +18,6 @@ keywords_EN: "" #list (separated by ";") of keywords as strings in english
 
 language: "" #list (separated by ";") of abbreviations (according to ISO 639-1) of languages used in dataset, for example "de; fr; it; en"
 
-landing page: "" #url of landing page of website about the dataset
 related resource: "" #url link to documents that provide further information for the dataset, multiple can be included and must be separated by ";"
 documentation: "" #url that refers to document or page about the distribution
 qualified relation: "" #list (separated by ";") of URIs of the identifiers of related datasets on opendata.swiss
