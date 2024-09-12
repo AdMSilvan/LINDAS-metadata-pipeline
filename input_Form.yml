@@ -3,8 +3,7 @@ dataset-URI:
 
 identifier: ""        #string of identifier, expected in the following structure: [Source-Dataset-ID]@[Source-Organisation-ID]
 
-dataset publisher: "" #URI of the platform or database used for publication usually <https://ld.admin.ch/org/lindas> 
-dataset creator: ""   #URI of the organization responsible for the dataset, own URI or from Zefix
+dataset publisher: "" #Organisation publishing the dataset, either as a URI or a string. If creator differs from publisher, also provide the creator
 
 name_DE: ""
 name_FR: ""
@@ -20,23 +19,38 @@ description_EN: ""
 contact-point name: ""   #name of individual or organization as string
 contact-point email: ""  #email address as string
 
-source creation-date:      #must be formatted as xsd:date / ISO 8601
-source modification-date:  #must be formatted as xsd:dateTime
 dataset publication-date:  #must be formatted as xsd:date / ISO 8601
-
+source modification-date:  #must be formatted as xsd:dateTime, mandatory if a modification has taken place
 example resource: "" #URI of a triple / resource in the dataset which serves as an example for introduction to the dataset
+SPARQL endpoint: "" #URL of the SPARQL endpoint
+GUI access URL: "" #URL of the GUI query window in the corresponding to the subdomain of the dataset
 
+#for multiple distributions, separate the values using ";"
+#if adding multiple distributions, pay attention to have the same amount of ";" separators for each property and that the values are in the correct order
+#if not adding a property for a distribution, add a space between the ";" separator
+distribution url: "" #url to access the distribution, such as a link to a sparql query with graph preselection
 distribution title DE: "" 
 distribution title FR: ""
 distribution title IT: ""
 distribution title EN: ""
 #distribution title as string in up to 4 languages
-distribution url: "" #url to access the distribution, such as a link to a sparql query with graph preselection
 
-SPARQL endpoint: "" #URL of the SPARQL endpoint
-GUI access URL: "" #URL of the GUI query window in the corresponding to the subdomain of the dataset
+#Optional distribution metadata
+distribution description DE: "" #distribution description as string in up to 4 languages
+distribution description FR: ""
+distribution description IT: ""
+distribution description EN: ""
+distribution date: ""    #must be formatted as xsd:dateTime, if not specified, can be automatically inherited from dataset publication date
+distribution license: ""    #URI of one of the four defined terms for the terms of use from https://ld.admin.ch/vocabulary/TermsOfUse
+distribution format: "" #will be SPARQL by default, if it is another type of distribution, specify while paying attention to the correct position in the ";" order
+distribution modification-date: "" #must be formatted as xsd:dateTime
+distribution size: "" #if downloadable, provide a size as an integer of bytes
+distribution language: "" #list (separated by ",") of abbreviations (according to ISO 639-1) of languages used in dataset, for example "de, fr, it, en". For multiple distributions, separate each set using ";"
 
 #optional metadata
-dataset contributor: "" #URI of the organization contributing to the publishing and transforming of the dataset, own URI or from Zefix   only add if different from creator
 landing page: "" #url of landing page of website about the dataset
+dataset creator: ""   #URI of the organization responsible for the dataset, own URI or from Zefix, mandatory if different from publisher
+dataset contributor: "" #URI of the organization contributing to the publishing and transforming of the dataset, own URI or from Zefix   only add if different from creator
+source creation-date:      #must be formatted as xsd:date / ISO 8601
+
 
