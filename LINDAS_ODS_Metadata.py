@@ -18,7 +18,7 @@ with open("input_Form.yml", "rt", encoding='utf8') as yml_input:
 try:
     with open("ODS_Form.yml", "rt", encoding='utf8') as ods_input:
         ODS_data = yaml.load(ods_input, yaml.Loader)
-    if ODS_data.get("identifier"):
+    if ODS_data.get("themes"):
         ODS_flag = True
     else:
         ODS_flag = False
@@ -42,13 +42,7 @@ g.add((dataset, RDF.type, schema.Dataset))
 g.add((dataset, RDF.type, dcat.Dataset))
 g.add((dataset, RDF.type, void.Dataset))
 
-#for each metadata point the following steps need to be checked through
-# 1. get from dict
-# 2. check rough conformance of datatype if possible
-# 3. assign URIRef or Literal
-# 4. write triples
-
-#name
+#title
 name_DE = input_data.get("name_DE")
 if name_DE:
     de_name = Literal(name_DE.strip(), lang="de")
@@ -77,6 +71,8 @@ if name_EN:
     g.add((dataset, dct.title, en_name))
 else:
     print("Missing English dataset name")
+
+#description
 description_DE = input_data.get("description_DE")
 if description_DE:
     de_description = Literal(description_DE.strip(), lang="de")
@@ -105,6 +101,16 @@ if description_EN:
     g.add((dataset, dct.description, en_description))
 else:
     print("Missing English dataset description")
+    
+#publisher
+publisher = input_data.get("dataset publisher")
+if publisher:
+    publisher_lit = Literal(publisher)
+    g.add((dataset, schema.publisher, publisher_lit))
+    g.add((dataset, dct.publisher, publisher_lit))
+else:
+    print("Dataset publisher missing") 
+
 
 #contact point
 contact_name = input_data.get("contact-point name")
@@ -129,20 +135,21 @@ elif contact_name:
 else:
     print("Contact Point name is missing")
 
+#identifier
+    
+ID = input_data.get("identifier")
+if ID:
+    if "@" in ID:
+        g.add((dataset, dct.identifier, Literal(ID)))
+    else: print("Identifier not formatted correctly")
+else: print("Identifier missing")
+
+
+
 #dates: to be tested using datetime
 date_format = "%Y-%m-%d"
 
-#creation date
-creation_date = input_data.get("source creation-date")
-if creation_date:
-    try: 
-        datetime.strptime(str(creation_date), date_format)
-        cre_date = Literal(creation_date, datatype=URIRef('http://www.w3.org/2001/XMLSchema#date'))
-        g.add((dataset, schema.dateCreated, cre_date))
-    except(ValueError):
-        print("creation date is not formatted as xsd:date")
-else:
-    print("Missing source creation date")
+
 
 #modification date
 modification_date = input_data.get("source modification-date")
@@ -167,92 +174,229 @@ if publication_date:
         issue_date = parse(str(publication_date))
         g.add((dataset, dct.issued, Literal(issue_date, datatype=URIRef('http://www.w3.org/2001/XMLSchema#date'))))
     except(ValueError):
-        print("publication date is not formatted as xsd:date")
+        print("issue date is not formatted as xsd:date")
 else:
-    print("Missing dataset publication date")
-    
-#work example application
-work_example_app = input_data.get("work example application").split(";")
-for app in work_example_app:
-    if app.strip() == "visualize":
-        visualize_link = URIRef("https://ld.admin.ch/application/visualize")
-        g.add((dataset, schema.workExample, visualize_link))
-        #could also be made redundant if automatically added when there is a visualize work example. Left for now in case there are datasets that are on visualize without providing a work example URL
-    elif app.strip() == "opendata.swiss":
-        ODS_link = URIRef("https://ld.admin.ch/application/opendataswiss")
-        g.add((dataset, schema.workExample, ODS_link))
-        #possibly this metadata can be used to determine whether ODS metadata should be added or there could be a separate field in the YAML form for whether ODS publication is desired, which automatically adds this triple as well
-    else:
-        if app.strip():
-            other_app_URI = URIRef("https://ld.admin.ch/application/"+app.strip())
-            g.add((dataset, schema.workExample, other_app_URI))
-        else:
-            pass
-        #work example application YAML form field is still required even if the main two applications would be automatically added elsewhere in case of other custom applications
+    print("Missing dataset issue date")
 
-#work example visualize
-visualize_URL = input_data.get("work example visualize")
-if visualize_URL:
-    if "https://visualize.admin.ch/" in visualize_URL:
-        visualize_example = Literal(visualize_URL)
-        visualize_BN = BNode()
-        g.add((dataset, schema.workExample, visualize_BN))
-        g.add((visualize_BN, schema.url, visualize_example))
-        g.add((visualize_BN, schema.name, Literal("visualize.admin.ch", lang="de")))
-        g.add((visualize_BN, schema.name, Literal("visualize.admin.ch", lang="fr")))
-        g.add((visualize_BN, schema.name, Literal("visualize.admin.ch", lang="it")))
-        g.add((visualize_BN, schema.name, Literal("visualize.admin.ch", lang="en")))
-        #This is how Cube Creator formats it, but is it really necessary to add 4 triples with different language tags for the same string?
-        g.add((visualize_BN, schema.encodingFormat, Literal("text/html", datatype=URIRef('http://www.w3.org/2001/XMLSchema#string'))))
-        g.add((visualize_BN, RDF.type, schema.CreativeWork))
-        if visualize_link:
-            pass
-        else:
-            visualize_link = URIRef("https://ld.admin.ch/application/visualize")
-            g.add((dataset, schema.workExample, visualize_link))
-    else:
-        print("Visualize work example link is not correctly formatted")
+#example resource
+example_resource = input_data.get("example resource")
+if example_resource:
+    data_URI = "/".join(dataset_URL.split("/")[:3])
+    if data_URI in example_resource:
+        g.add((dataset, void.exampleResource, URIRef(example_resource)))
 else:
-    print("Visualize work example link is missing")
-    
-#work example SPARQL endpoint
-example_sparql = input_data.get("work example SPARQLendpoint")
-if example_sparql:
-    if "https://lindas.admin.ch/sparql/" in example_sparql:
-        sparql_work = Literal(example_sparql)
-        sparql_BN = BNode()
-        g.add((dataset, schema.workExample, sparql_BN))
-        g.add((sparql_BN, schema.url, sparql_work))
-        g.add((sparql_BN, schema.name, Literal("SPARQL Endpoint mit Vorauswahl des Graph", lang="de")))
-        g.add((sparql_BN, schema.name, Literal("SPARQL Endpoint avec présélection du graphe", lang="fr")))
-        g.add((sparql_BN, schema.name, Literal("SPARQL Endpoint con preselezione del grafo", lang="it")))
-        g.add((sparql_BN, schema.name, Literal("SPARQL Endpoint with graph preselection", lang="en")))
-        g.add((sparql_BN, schema.encodingFormat, Literal("application/sparql-query", datatype=URIRef('http://www.w3.org/2001/XMLSchema#string'))))
-        g.add((sparql_BN, RDF.type, schema.CreativeWork))
-    else:
-        print("SPARQL work example link is not correctly formatted")
-else:
-    print("SPARQL work example link is missing")
+    print("Example resource missing")
 
+#distributions
+dist_titles_DE = input_data.get("distribution title DE").split(";")
+dist_titles_FR = input_data.get("distribution title FR").split(";")
+dist_titles_IT = input_data.get("distribution title IT").split(";")
+dist_titles_EN = input_data.get("distribution title EN").split(";")
+dist_description_DE = input_data.get("distribution description DE").split(";")
+dist_description_FR = input_data.get("distribution description FR").split(";")
+dist_description_IT = input_data.get("distribution description IT").split(";")
+dist_description_EN = input_data.get("distribution description EN").split(";")
+dist_date = input_data.get("distribution date").split(";")
+dist_URL = input_data.get("distribution url").split(";")
+dist_license = input_data.get("distribution license").split(";")
+dist_mod_date = input_data.get("distribution modification-date").split(";")
+dist_size = input_data.get("distribution size").split(";")
+dist_lang = input_data.get("distribution language").split(";")
+title_pointer = 0
+for dist in dist_URL:
+    dist_BN = BNode()
+    g.add((dataset, dcat.distribution, dist_BN))
+    #distribution URL
+    dis_url = URIRef(dist)
+    g.add((dist_BN, dcat.accessURL, dis_url))
+    #distribution titles
+    try: 
+        if dist_titles_DE[title_pointer]:
+            de_title = Literal(dist_titles_DE[title_pointer].strip(), lang="de")
+            g.add((dist_BN, dct.title, de_title))
+        else: print(f"German title for distribution {title_pointer+1} is missing")
+    except(IndexError):   
+        print(f"German title for distribution {title_pointer+1} is missing")
+    try:
+        if dist_titles_FR[title_pointer]:
+            fr_title = Literal(dist_titles_FR[title_pointer].strip(), lang="fr")
+            g.add((dist_BN, dct.title, fr_title))
+        else: print(f"French title for distribution {title_pointer+1} is missing")
+    except(IndexError):   
+        print(f"French title for distribution {title_pointer+1} is missing")
+    try:
+        if dist_titles_IT[title_pointer]:
+            it_title = Literal(dist_titles_IT[title_pointer].strip(), lang="it")
+            g.add((dist_BN, dct.title, it_title))
+        else: print(f"Italian title for distribution {title_pointer+1} is missing")
+    except(IndexError):   
+        print(f"Italian title for distribution {title_pointer+1} is missing")
+    try:
+        if dist_titles_EN[title_pointer]:
+            en_title = Literal(dist_titles_EN[title_pointer].strip(), lang="en")
+            g.add((dist_BN, dct.title, en_title))
+        else: print(f"English title for distribution {title_pointer+1} is missing")
+    except(IndexError):   
+        print(f"English title for distribution {title_pointer+1} is missing")
+    #distribution issue date
+    try:  
+        if dist_date[title_pointer]:
+            try: 
+                parse(str(dist_date[title_pointer]))
+                dis_date = Literal(dist_date[title_pointer], datatype=URIRef('http://www.w3.org/2001/XMLSchema#dateTime'))
+                g.add((dist_BN, dct.issued, dis_date))
+            except(ValueError):
+                print(f"issue date of distribution {title_pointer+1} is not formatted as xsd:dateTime")
+        else:
+            while True:
+                inherit = input(f"no issue date provided for distribution {title_pointer+1}, do you wish to inherit the issue date of the dataset? y/n")
+                if "y" in inherit:
+                    if publication_date:
+                        try: 
+                            datetime.strptime(str(publication_date), date_format)
+                            issue_date = parse(str(publication_date))
+                            g.add((dist_BN, dct.issued, Literal(issue_date, datatype=URIRef('http://www.w3.org/2001/XMLSchema#date'))))
+                            break
+                        except(ValueError):
+                            print("issue date is not formatted as xsd:date")
+                    else:
+                        print("Missing dataset issue date")
+                elif "n" in inherit:
+                    print(f"Issue date for distribution {title_pointer+1} is missing")
+                    break
+                else: pass
+    except(IndexError):
+        while True:
+            inherit = input(f"no issue date provided for distribution {title_pointer+1}, do you wish to inherit the issue date of the dataset? y/n")
+            if "y" in inherit:
+                if publication_date:
+                    try: 
+                        datetime.strptime(str(publication_date), date_format)
+                        issue_date = parse(str(publication_date))
+                        g.add((dist_BN, dct.issued, Literal(issue_date, datatype=URIRef('http://www.w3.org/2001/XMLSchema#date'))))
+                        break
+                    except(ValueError):
+                        print("issue date is not formatted as xsd:date")
+                else:
+                    print("Missing dataset issue date")
+                
+            elif "n" in inherit:
+                print(f"Issue date for distribution {title_pointer+1} is missing")
+                break
+            else: pass
+    
+    
+    
+    #distribution descriptions
+    try:
+        if dist_description_DE[title_pointer]:
+            de_description = Literal(dist_description_DE[title_pointer].strip(), lang="de")
+            g.add((dist_BN, dct.description, de_description))
+        else: print(f"Optional: German description for distribution {title_pointer+1} is missing")
+    except(IndexError):   print(f"Optional: German description for distribution {title_pointer+1} is missing")
+    try:
+        if dist_description_FR[title_pointer]:
+            fr_description = Literal(dist_description_FR[title_pointer].strip(), lang="fr")
+            g.add((dist_BN, dct.description, fr_description))
+        else: print(f"Optional: French description for distribution {title_pointer+1} is missing")
+    except(IndexError):   print(f"Optional: French description for distribution {title_pointer+1} is missing")
+    try:
+        if dist_description_IT[title_pointer]:
+            it_description = Literal(dist_description_IT[title_pointer].strip(), lang="it")
+            g.add((dist_BN, dct.description, it_description))
+        else: print(f"Optional: Italian description for distribution {title_pointer+1} is missing")
+    except(IndexError):   print(f"Optional: Italian description for distribution {title_pointer+1} is missing")
+    try:
+        if dist_description_EN[title_pointer]:
+            en_description = Literal(dist_description_EN[title_pointer].strip(), lang="en")
+            g.add((dist_BN, dct.description, en_description))
+        else: print(f"Optional: English description for distribution {title_pointer+1} is missing")
+    except(IndexError):   print(f"Optional: English description for distribution {title_pointer+1} is missing")
+    
+    #distribution modification date
+    try:
+        if dist_mod_date[title_pointer]:
+            try: 
+                parse(str(dist_mod_date[title_pointer]))
+                mod_date = Literal(dist_mod_date[title_pointer], datatype=URIRef('http://www.w3.org/2001/XMLSchema#dateTime'))
+                g.add((dist_BN, dct.modified, mod_date))
+            except(ValueError):
+                print(f"modification date for distribution {title_pointer+1} is not formatted as xsd:dateTime")
+        else: print(f"Optional: Missing modification date for distribution {title_pointer+1}")
+    except(IndexError):
+        print(f"Optional: Missing modification date for distribution {title_pointer+1}")
+    
+    #distribution size
+    try:
+        if isinstance(dist_size[title_pointer], int):
+           size = Literal(dist_size[title_pointer], datatype=URIRef('https://www.w3.org/2001/XMLSchema#integer'))
+           g.add((dist_BN, dcat.byteSize, size))
+        elif not dist_size:
+            print(f"Optional: Missing size for distribution {title_pointer+1}")
+        else:
+            print(f"Size of distribution {title_pointer+1} not formatted as xsd:integer")
+    except(IndexError):
+        print(f"Optional: Missing size for distribution {title_pointer+1}") 
+    
+    #distribution license
+    try:
+        if "https://ld.admin.ch/vocabulary/TermsOfUse" in dist_license[title_pointer]:
+            dist_lic = URIRef(dist_license[title_pointer])
+            g.add((dist_BN, dct.license, dist_lic))
+        elif dist_license:
+            print(f"License of distribution {title_pointer+1} not formatted as a URI in the namespace https://ld.admin.ch/vocabulary/TermsOfUse")
+        else: 
+            print(f"Optional: Missing license for distribution {title_pointer+1}")
+    except(IndexError):
+        print(f"Optional: Missing license for distribution {title_pointer+1}")
+    
+    #distribution language
+    try:
+        langs = dist_lang[title_pointer].split(",")
+        for language in langs:
+            if language:
+                language = language.strip()
+                g.add((dist_BN, dct.language, Literal(language, lang=language)))
+            else: pass 
+    except(IndexError): 
+        print(f"Optional: Languages for distribution {title_pointer+1} missing")
+    title_pointer += 1
+   
 #SPARQL endpoint
 sparql_url = input_data.get("SPARQL endpoint")
 if sparql_url:
-    sparql_end = Literal(sparql_url)
-    end_prop = URIRef("http://rdfs.org/ns/void#sparqlEndpoint")
-    g.add((dataset, end_prop, sparql_end))
+    if sparql_url.split("/")[-1] == "query" and "ld.admin.ch" in sparql_url:
+        sparql_end = Literal(sparql_url)
+        end_prop = URIRef("http://rdfs.org/ns/void#sparqlEndpoint")
+        g.add((dataset, end_prop, sparql_end))
+    else: print("SPARQL endpoint does not end with /query or is not in the 'ld.admin.ch' namespace") 
 else:
     print("SPARQL endpoint is missing")
     
-#optional metadata
+#GUI access URL
+access_url = input_data.get("GUI access URL")
+if access_url:
+    if access_url.split("/")[-1] == "sparql" and "ld.admin.ch" in access_url:
+        access_GUI = Literal(access_url)
+        g.add((dataset, dcat.accessURL, access_GUI))
+    else: print("GUI access page does not end with /sparql or is not in the 'ld.admin.ch' namespace")
+else:
+    print("GUI access page is missing")
+    
+#OPTIONAL 
+#creator
 creator = input_data.get("dataset creator") 
 if creator:
-    if "http" or "https" in creator:
+    if "https://register.ld.admin.ch/" in creator:
         creator_URI = URIRef(creator)
         g.add((dataset, schema.creator, creator_URI))
+        g.add((dataset, dct.creator, creator_URI))
     else:
         print("dataset creator not formatted correctly")
 else:
     print("Optional: no dataset creator provided")
+
+#contributor
 contributor = input_data.get("dataset contributor")
 if contributor:
     if "http" in contributor:
@@ -262,56 +406,29 @@ if contributor:
         print("dataset contributor not formatted correctly")
 else:
     print("Optional: no dataset contributor provided") 
-publisher = input_data.get("dataset publisher")
-if publisher:
-    if "http" in publisher:
-        publisher_URI = URIRef(publisher)
-        g.add((dataset, schema.publisher, publisher_URI))
-    else:
-        print("dataset publisher not formatted correctly")
-else:
-    print("Optional: no dataset publisher provided") 
-
-next_modification = input_data.get("next modification date") 
-if next_modification:
+    
+#creation date
+creation_date = input_data.get("source creation-date")
+if creation_date:
     try: 
-        datetime.strptime(str(next_modification), date_format)
-        next_mod = Literal(next_modification, datatype=URIRef('http://www.w3.org/2001/XMLSchema#date'))
-        g.add((dataset, URIRef("https://schema.ld.admin.ch/datasetNextDateModified"), next_mod))
+        datetime.strptime(str(creation_date), date_format)
+        cre_date = Literal(creation_date, datatype=URIRef('http://www.w3.org/2001/XMLSchema#date'))
+        g.add((dataset, schema.dateCreated, cre_date))
     except(ValueError):
-        print("next modification date is not formatted as xsd:dateTime")
-    
+        print("creation date is not formatted as xsd:date")
 else:
-    print("Optional: no next modification date provided")
+    print("Missing source creation date")
+    
+#landing page
+page = input_data.get("landing page")
+if not page: print("Optional: Landing page missing")
+elif "https://" in page:
+    g.add((dataset, dcat.landingPage, URIRef(page)))
+else: print("Landing page not formatted correctly")
 
-example_resource = input_data.get("example resource")
-if example_resource:
-    data_URI = "/".join(dataset_URL.split("/")[:3])
-    if data_URI in example_resource:
-        g.add((dataset, URIRef("https://schema.ld.admin.ch/exampleResource"), URIRef(example_resource)))
-else:
-    print("Optional: no example resource provided")
     
-# ODS metadata
+#ODS metadata
 if ODS_flag:
-    ID = ODS_data.get("identifier")
-    if "@" in ID:
-        g.add((dataset, dct.identifier, Literal(ID)))
-    else: print("opendata.swiss identifier not formatted correctly")
-   
-    creator_ODS = ODS_data.get("creator")
-    if creator_ODS:
-        if "https://register.ld.admin.ch/opendataswiss/org" in creator_ODS:
-            g.add((dataset, dct.creator, URIRef(creator_ODS)))
-            if not creator:
-                g.add((dataset, schema.creator, URIRef(creator_ODS)))
-            else: pass
-        else: print("opendata.swiss creator was not formatted correctly")
-    else: print("opendata.swiss creator missing")
-    publisher_ODS = ODS_data.get("publisher")
-    if publisher_ODS:
-        g.add((dataset, dct.publisher, Literal(publisher_ODS)))
-    else: print("opendata.swiss publisher missing")
     license_ODS = ODS_data.get("license")
     #this script follows the current implementation of "dct:license" on LINDAS rather than the ideal description in the DCAT-AP handbook
     if license_ODS:
@@ -381,12 +498,6 @@ if ODS_flag:
                 g.add((dataset, dct.language, Literal(language, lang=language)))
             else: pass 
     else: print("opendata.swiss languages missing")
-
-    page = ODS_data.get("landing page")
-    if not page: print("opendata.swiss landing page missing")
-    elif "https://" in page:
-        g.add((dataset, dcat.landingPage, URIRef(page)))
-    else: print("opendata.swiss landing page not formatted correctly")
 
     docu = ODS_data.get("documentation").split(";")
     if docu[0]:
