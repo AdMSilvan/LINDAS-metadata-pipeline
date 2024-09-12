@@ -9,7 +9,7 @@ from datetime import datetime
 schema = Namespace("http://schema.org/")
 dcat = Namespace("http://www.w3.org/ns/dcat#")
 dct = Namespace("http://purl.org/dc/terms/")
-void = Namespace("	http://rdfs.org/ns/void#")
+void = Namespace("http://rdfs.org/ns/void#")
 
 #parse input
 with open("input_Form.yml", "rt", encoding='utf8') as yml_input:
